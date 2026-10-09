@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SplitVibe - 智慧分帳與命運輪盤</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --border: rgba(255, 255, 255, 0.1);
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e1b4b, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a5b4fc, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input, select, button {
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    button {
+      background: var(--accent);
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Tag List */
+    .member-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tag {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tag span {
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .tag span:hover {
+      color: var(--danger);
+    }
+
+    /* Form Styles */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px 0;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    /* Expense List */
+    .expense-list {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .expense-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    /* Settlement Summary */
+    .settlement-card {
+      grid-column: 1 / -1;
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.8));
+    }
+
+    .transfers-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .transfer-item {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 12px 16px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Wheel Section */
+    .wheel-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .wheel-pointer {
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 20px solid #ef4444;
+      position: absolute;
+      top: -6px;
+      z-index: 10;
+    }
+
+    canvas {
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      background: #1e293b;
+    }
+
+    .result-text {
+      margin-top: 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #38bdf8;
+      min-height: 28px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>SplitVibe 智慧分帳 & 命運輪盤</h1>
+    <p>輕鬆平帳，決定誰買單或吃什麼！</p>
+  </header>
+
+  <div class="container">
+    <!-- 成員與新增開銷 -->
+    <div class="card">
+      <h2>👥 參與夥伴管理</h2>
+      <div style="display: flex; gap: 8px;">
+        <input type="text" id="memberInput" placeholder="輸入成員名字..." style="flex: 1;" />
+        <button id="addMemberBtn">新增</button>
+      </div>
+      <div class="member-tags" id="memberTags"></div>
+
+      <hr style="border: none; border-top: 1px solid var(--border); margin: 20px 0;" />
+
+      <h2>💸 新增消費項目</h2>
+      <div class="form-group">
+        <label>消費描述</label>
+        <input type="text" id="expDesc" placeholder="例如：晚餐、計程車、門票" />
+      </div>
+      <div class="form-group">
+        <label>金額 (NTD)</label>
+        <input type="number" id="expAmount" placeholder="例如：1200" />
+      </div>
+      <div class="form-group">
+        <label>誰付的錢？</label>
+        <select id="expPayer"></select>
+      </div>
+      <div class="form-group">
+        <label>誰一起分攤？</label>
+        <div class="checkbox-group" id="splitMembers"></div>
+      </div>
+      <button id="addExpenseBtn" style="width: 100%; margin-top: 8px;">記上一筆</button>
+
+      <div class="expense-list" id="expenseList"></div>
+    </div>
+
+    <!-- 命運轉盤 -->
+    <div class="card">
+      <h2>🎡 命運大轉盤</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">猶豫不決？讓轉盤替你們決定！</p>
+      <div class="wheel-container">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheelCanvas" width="280" height="280"></canvas>
+        <div class="result-text" id="wheelResult">等待旋轉...</div>
+        <button id="spinBtn" style="margin-top: 10px; width: 60%;">開始轉動！</button>
+      </div>
+    </div>
+
+    <!-- 最佳結算建議 -->
+    <div class="card settlement-card">
+      <h2>⚖️ 最少次數清帳建議</h2>
+      <div id="transferContainer" class="transfers-box">
+        <p style="color: var(--text-muted); font-size: 0.9rem;">輸入至少兩名成員與開銷紀錄後，將自動產生結算方案。</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- State 管理與 LocalStorage ---
+    let state = {
+      members: JSON.parse(localStorage.getItem('sv_members')) || ['小明', '小華', '阿強'],
+      expenses: JSON.parse(localStorage.getItem('sv_expenses')) || []
+    };
+
+    function saveState() {
+      localStorage.setItem('sv_members', JSON.stringify(state.members));
+      localStorage.setItem('sv_expenses', JSON.stringify(state.expenses));
+      render();
+    }
+
+    // --- DOM 元件 ---
+    const memberInput = document.getElementById('memberInput');
+    const addMemberBtn = document.getElementById('addMemberBtn');
+    const memberTags = document.getElementById('memberTags');
+    const expDesc = document.getElementById('expDesc');
+    const expAmount = document.getElementById('expAmount');
+    const expPayer = document.getElementById('expPayer');
+    const splitMembers = document.getElementById('splitMembers');
+    const addExpenseBtn = document.getElementById('addExpenseBtn');
+    const expenseList = document.getElementById('expenseList');
+    const transferContainer = document.getElementById('transferContainer');
+
+    // --- 成員操作 ---
+    addMemberBtn.addEventListener('click', () => {
+      const name = memberInput.value.trim();
+      if (!name) return;
+      if (state.members.includes(name)) return alert('成員名稱已存在！');
+      state.members.push(name);
+      memberInput.value = '';
+      saveState();
+    });
+
+    function removeMember(name) {
+      state.members = state.members.filter(m => m !== name);
+      // 清理開銷紀錄中已刪除的成員
+      state.expenses = state.expenses.filter(e => e.payer !== name);
+      saveState();
+    }
+
+    // --- 開銷操作 ---
+    addExpenseBtn.addEventListener('click', () => {
+      const desc = expDesc.value.trim();
+      const amount = parseFloat(expAmount.value);
+      const payer = expPayer.value;
+      const checkedBoxes = document.querySelectorAll('#splitMembers input[type="checkbox"]:checked');
+      const splits = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (!desc || isNaN(amount) || amount <= 0 || !payer) {
+        return alert('請填寫完整且正確的消費資訊！');
+      }
+      if (splits.length === 0) {
+        return alert('請至少選擇一位分攤夥伴！');
+      }
+
+      state.expenses.push({ id: Date.now(), desc, amount, payer, splits });
+      expDesc.value = '';
+      expAmount.value = '';
+      saveState();
+    });
+
+    function deleteExpense(id) {
+      state.expenses = state.expenses.filter(e => e.id !== id);
+      saveState();
+    }
+
+    // --- 最簡清帳演算法 (Debt Simplification) ---
+    function calculateSettlement() {
+      if (state.members.length < 2 || state.expenses.length === 0) return [];
+
+      // 1. 計算每個人淨額
+      const netBalances = {};
+      state.members.forEach(m => netBalances[m] = 0);
+
+      state.expenses.forEach(e => {
+        if (!netBalances.hasOwnProperty(e.payer)) netBalances[e.payer] = 0;
+        netBalances[e.payer] += e.amount;
+
+        const share = e.amount / e.splits.length;
+        e.splits.forEach(member => {
+          if (!netBalances.hasOwnProperty(member)) netBalances[member] = 0;
+          netBalances[member] -= share;
+        });
+      });
+
+      // 2. 分成欠款者與收款者
+      const debtors = [];
+      const creditors = [];
+
+      for (const [member, balance] of Object.entries(netBalances)) {
+        const rounded = Math.round(balance * 100) / 100;
+        if (rounded < -0.01) debtors.push({ member, amount: -rounded });
+        else if (rounded > 0.01) creditors.push({ member, amount: rounded });
+      }
+
+      // 3. 貪婪演算法最小化轉帳
+      const transfers = [];
+      let i = 0, j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const settleAmount = Math.min(debtors[i].amount, creditors[j].amount);
+        transfers.push({
+          from: debtors[i].member,
+          to: creditors[j].member,
+          amount: Math.round(settleAmount)
+        });
+
+        debtors[i].amount -= settleAmount;
+        creditors[j].amount -= settleAmount;
+
+        if (debtors[i].amount <= 0.01) i++;
+        if (creditors[j].amount <= 0.01) j++;
+      }
+
+      return transfers;
+    }
+
+    // --- 轉盤模組 (Canvas Wheel) ---
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spinBtn');
+    const wheelResult = document.getElementById('wheelResult');
+
+    let currentAngle = 0;
+    let isSpinning = false;
+    const colors = ['#f43f5e', '#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#6366f1'];
+
+    function drawWheel() {
+      const items = state.members.length > 0 ? state.members : ['無選項'];
+      const numSegments = items.length;
+      const anglePerSegment = (2 * Math.PI) / numSegments;
+      const radius = canvas.width / 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate(currentAngle);
+
+      for (let i = 0; i < numSegments; i++) {
+        const startAngle = i * anglePerSegment;
+        const endAngle = startAngle + anglePerSegment;
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, startAngle, endAngle);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        ctx.stroke();
+
+        // 繪製文字
+        ctx.save();
+        ctx.rotate(startAngle + anglePerSegment / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText(items[i], radius - 20, 5);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    spinBtn.addEventListener('click', () => {
+      if (isSpinning || state.members.length === 0) return;
+      isSpinning = true;
+      wheelResult.innerText = '旋轉中...';
+
+      const spinDuration = 3500;
+      const start = performance.now();
+      const extraSpins = 5 + Math.random() * 5;
+      const targetAngle = currentAngle + extraSpins * 2 * Math.PI + Math.random() * 2 * Math.PI;
+      const initialAngle = currentAngle;
+
+      function animate(time) {
+        const elapsed = time - start;
+        const progress = Math.min(elapsed / spinDuration, 1);
+        // Ease-out cubic
+        const ease = 1 - Math.pow(1 - progress, 3);
+        currentAngle = initialAngle + (targetAngle - initialAngle) * ease;
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          isSpinning = false;
+          // 計算指針停留項目 (指針在最上方 270 度或 3*PI/2)
+          const totalAngle = currentAngle % (2 * Math.PI);
+          const normalized = (2 * Math.PI - totalAngle + (3 * Math.PI / 2)) % (2 * Math.PI);
+          const segmentAngle = (2 * Math.PI) / state.members.length;
+          const index = Math.floor(normalized / segmentAngle);
+          wheelResult.innerText = `🎉 命運選中了：${state.members[index]}！`;
+        }
+      }
+      requestAnimationFrame(animate);
+    });
+
+    // --- 介面重繪 ---
+    function render() {
+      // 1. 成員標籤
+      memberTags.innerHTML = state.members.map(m => `
+        <div class="tag">${m} <span onclick="removeMember('${m}')">✕</span></div>
+      `).join('');
+
+      // 2. 開銷表單下拉與核取方塊
+      expPayer.innerHTML = state.members.map(m => `<option value="${m}">${m}</option>`).join('');
+      splitMembers.innerHTML = state.members.map(m => `
+        <label class="checkbox-item">
+          <input type="checkbox" value="${m}" checked /> ${m}
+        </label>
+      `).join('');
+
+      // 3. 開銷列表
+      expenseList.innerHTML = state.expenses.map(e => `
+        <div class="expense-item">
+          <div>
+            <strong>${e.desc}</strong> - $${e.amount} (由 <em>${e.payer}</em> 付款)
+            <div style="font-size: 0.75rem; color: var(--text-muted);">分攤人: ${e.splits.join(', ')}</div>
+          </div>
+          <button style="background: transparent; color: var(--danger); padding: 4px;" onclick="deleteExpense(${e.id})">刪除</button>
+        </div>
+      `).join('');
+
+      // 4. 清帳方案
+      const settlements = calculateSettlement();
+      if (settlements.length === 0) {
+        transferContainer.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">目前無需轉帳或資料尚未齊全。</p>`;
+      } else {
+        transferContainer.innerHTML = settlements.map(s => `
+          <div class="transfer-item">
+            <span><strong>${s.from}</strong> 應轉給 <strong>${s.to}</strong></span>
+            <span style="font-weight: 800; color: #38bdf8;">$${s.amount} NTD</span>
+          </div>
+        `).join('');
+      }
+
+      // 5. 輪盤重繪
+      drawWheel();
+    }
+
+    // 初始化渲染
+    render();
+  </script>
+</body>
+</html>
